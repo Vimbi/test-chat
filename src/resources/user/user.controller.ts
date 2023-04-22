@@ -17,6 +17,6 @@ export default class UserController {
 
   @Get(':email')
   public async findByEmail(@Param('email') email: string) {
-    return await this.repository.findNoPass({ email });
+    return await this.repository.findBy({ email });
   }
 }

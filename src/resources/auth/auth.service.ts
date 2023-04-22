@@ -9,7 +9,6 @@ import { AuthEmailLoginDto } from './dto/auth-login.dto';
 import { AuthRegisterLoginDto } from './dto/auth-register-login.dto';
 import { encryptPassword } from '../../utils/encrypt-password';
 import { errorMsgs } from '../../shared/error-messages';
-import { IJwtPayload } from '../../types/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
@@ -27,9 +26,9 @@ export class AuthService {
   }
 
   /**
-   * Create tokens
+   * Create token
    * @param user User
-   * @return tokens
+   * @return token
    */
 
   createToken(user: User) {
@@ -85,6 +84,13 @@ export class AuthService {
     const password = await encryptPassword(dto.password);
     return await this.usersService.createUser({ email: dto.email, password });
   }
+
+  /**
+   * Get user by token
+   * @param authHeader authorization header
+   * @returns user
+   * @throws WsException
+   */
 
   async getUserByToken(authHeader: string) {
     if (!authHeader) {

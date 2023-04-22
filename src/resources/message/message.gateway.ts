@@ -15,6 +15,8 @@ import { User } from '../user/entities/user.entity';
 import { MessageService } from './message.service';
 import { MessageDto } from './dto/message.dto';
 import { AuthService } from '../auth/auth.service';
+import { EventEnum } from './event.enum';
+import { errorMsgs } from '../../shared/error-messages';
 
 @WebSocketGateway()
 @UseGuards(WsAuthGuard)
@@ -30,22 +32,19 @@ export class MessageGateway
     private readonly logger: Logger,
   ) {}
 
-  @SubscribeMessage('send_message')
+  @SubscribeMessage(EventEnum.send_message)
   async handleMessage(
     @ConnectedSocket() client: Socket,
     @MessageBody() { text }: MessageDto,
   ) {
-    const authHeader = client?.handshake?.headers?.authorization;
-    let user: User;
     try {
-      user = await this.authService.getUserByToken(authHeader);
+      const user = (client?.handshake as any)?.user;
+      const message = await this.messageService.create(text, user);
+      this.logger.log(EventEnum.send_message, text, user.email);
+      this.server.sockets.emit(EventEnum.receive_message, message);
     } catch (error) {
-      throw new WsException('User not found');
+      throw new WsException(error);
     }
-    const message = await this.messageService.create(text, user);
-    this.logger.log('send_message', text, user);
-
-    this.server.sockets.emit('receive_message', message);
   }
 
   async handleConnection(client: Socket) {
@@ -53,26 +52,19 @@ export class MessageGateway
     let user: User;
     try {
       user = await this.authService.getUserByToken(authHeader);
-      this.server.emit('user_connect_chat', user);
-      this.logger.log('user_connect_chat', user);
+      this.server.emit(EventEnum.user_connect_chat, user);
+      this.logger.log(EventEnum.user_connect_chat, user);
     } catch (error) {
-      this.logger.error(
-        'Socket disconnected within handleConnection() in AppGateway:',
-        error,
-      );
+      this.logger.error(errorMsgs.connectError, error);
       client.disconnect(true);
       return;
     }
     try {
       const messages = await this.messageService.findAll();
-      this.server.emit('connect_chat_messages', messages);
-      this.logger.log('connect_chat_messages', messages);
+      this.server.emit(EventEnum.connect_get_chat_messages, messages);
+      this.logger.log(EventEnum.connect_get_chat_messages, messages);
     } catch (error) {
-      this.logger.error(
-        'Socket disconnected within handleConnection() in AppGateway:',
-        error,
-      );
-      client.disconnect(true);
+      this.logger.error(errorMsgs.getMessagesError, error);
       return;
     }
   }
@@ -83,12 +75,9 @@ export class MessageGateway
       let user: User;
       try {
         user = await this.authService.getUserByToken(authHeader);
-        this.server.emit('user_disconnect_chat', user);
+        this.server.emit(EventEnum.user_disconnect_chat, user);
       } catch (error) {
-        this.logger.error(
-          'Socket disconnected within handleDisconnect() in AppGateway:',
-          error,
-        );
+        this.logger.error(errorMsgs.disconnectError, error);
         client.disconnect(true);
         return;
       }

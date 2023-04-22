@@ -12,6 +12,13 @@ export class MessageService {
     private readonly userService: UserService,
   ) {}
 
+  /**
+   * Create message
+   * @param text message text
+   * @param author message author
+   * @returns message
+   */
+
   async create(text: string, author: User) {
     const createdMessage = new this.messageModel({
       text,
@@ -21,6 +28,11 @@ export class MessageService {
     // return await auth.save();
     return await createdMessage.save();
   }
+
+  /**
+   * Return all messages
+   * @returns array of messages
+   */
 
   async findAll() {
     return await this.messageModel.find();
