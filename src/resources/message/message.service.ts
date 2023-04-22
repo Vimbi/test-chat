@@ -1,15 +1,13 @@
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Message } from './entities/message.entity';
 import { User } from '../user/entities/user.entity';
-import { UserService } from '../user/user.service';
 
 @Injectable()
 export class MessageService {
   constructor(
     @InjectModel(Message.name) private messageModel: Model<Message>,
-    private readonly userService: UserService,
   ) {}
 
   /**
@@ -36,5 +34,16 @@ export class MessageService {
 
   async findAll() {
     return await this.messageModel.find();
+  }
+
+  /**
+   * Return messages by filter
+   * @param filter message filter
+   * @returns array of messages
+   */
+
+  async findBy(filter: FilterQuery<Message>) {
+    const msgs = await this.messageModel.find(filter).exec();
+    return msgs;
   }
 }

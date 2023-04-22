@@ -5,13 +5,17 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
+import { MessageService } from '../message/message.service';
 import { RegisterDto } from './dto/register.dto';
 import { UpdateDto } from './dto/update.dto';
 import { User } from './entities/user.entity';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<User>,
+    private messageService: MessageService,
+  ) {}
 
   /**
    * Create user
@@ -60,11 +64,11 @@ export class UserService {
    */
 
   async findBy(filter: FilterQuery<User>) {
-    return await this.userModel
-      .findOne(filter)
-      .populate('messages')
-      .select('loginAt')
-      .exec();
+    const user = await this.userModel.findOne(filter).select('loginAt').exec();
+    user.messages = await this.messageService.findBy({
+      author: user._id,
+    });
+    return user;
   }
 
   /**
