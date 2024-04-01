@@ -5,7 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { useContainer } from 'class-validator';
 import { AppModule } from './app.module';
-import { HttpExceptionsFilter } from './filters/http-exceptions.filter';
+import { AllExceptionsFilter } from './filters/http-exceptions.filter';
 import { WebsocketExceptionsFilter } from './filters/websocket-exceptions.filter';
 import { DEVELOPMENT } from './utils/constants';
 
@@ -21,10 +21,7 @@ async function bootstrap() {
     }),
   );
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
-  app.useGlobalFilters(
-    new WebsocketExceptionsFilter(),
-    // new HttpExceptionsFilter(new Logger()),
-  );
+  app.useGlobalFilters(new AllExceptionsFilter(new Logger()));
 
   const nodeEnv = configService.get('app.nodeEnv');
 

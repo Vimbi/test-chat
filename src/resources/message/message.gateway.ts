@@ -1,5 +1,5 @@
 import { WsException, ConnectedSocket } from '@nestjs/websockets';
-import { UseGuards, Logger } from '@nestjs/common';
+import { UseGuards, Logger, BadGatewayException, BadRequestException, UseFilters } from '@nestjs/common';
 import {
   MessageBody,
   SubscribeMessage,
@@ -17,9 +17,11 @@ import { MessageDto } from './dto/message.dto';
 import { AuthService } from '../auth/auth.service';
 import { EventEnum } from './event.enum';
 import { errorMsgs } from '../../shared/error-messages';
+import { WebsocketExceptionsFilter } from '../../filters/websocket-exceptions.filter';
 
 @WebSocketGateway()
 @UseGuards(WsAuthGuard)
+@UseFilters(WebsocketExceptionsFilter)
 export class MessageGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
@@ -37,6 +39,10 @@ export class MessageGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() { text }: MessageDto,
   ) {
+    console.log('1111');
+    throw new WsException('OOOps!!');
+    // throw new BadRequestException('OOOps!!');
+
     try {
       const user = (client?.handshake as any)?.user;
       const message = await this.messageService.create(text, user);

@@ -1,15 +1,38 @@
-import { ArgumentsHost, Catch, HttpException } from '@nestjs/common';
+import { ArgumentsHost, Catch, Logger } from '@nestjs/common';
 import { BaseWsExceptionFilter, WsException } from '@nestjs/websockets';
+import { inspect } from 'util';
+import { PacketType } from 'socket.io-parser';
 
-@Catch(WsException)
+@Catch()
 export class WebsocketExceptionsFilter extends BaseWsExceptionFilter {
-  catch(exception: WsException | HttpException, host: ArgumentsHost) {
-    const client = host.switchToWs().getClient() as WebSocket;
+  // constructor(private readonly logger: Logger) {
+  //   super();
+  // }
+
+  catch(exception: WsException, host: ArgumentsHost) {
+    // super.catch(exception, host);
+    // if (host.getType() === 'ws') {
+    const args = host.getArgs();
+    // event ack callback
+    if ('function' === typeof args[args.length - 1]) {
+      const ACKCallback = args.pop();
+      ACKCallback({ error: exception.message, exception });
+    }
+
+    const client = host.switchToWs().getClient();
     const data = host.switchToWs().getData();
-    const error =
-      exception instanceof WsException
-        ? exception.getError()
-        : exception.getResponse();
+    // console.log('99999', inspect(client));
+    // client.packet({
+    //   type: PacketType.EVENT,
+    //   namespace: 'error',
+    //   data: [{ error: exception?.message }],
+    //   id: client.nsp._ids++,
+    // });
+    // const error =
+    //   exception instanceof WsException
+    //     ? exception.getError()
+    //     : exception.getResponse();
+    const error = exception.getError();
     const details = error instanceof Object ? { ...error } : { message: error };
     client.send(
       JSON.stringify({
@@ -21,5 +44,6 @@ export class WebsocketExceptionsFilter extends BaseWsExceptionFilter {
         },
       }),
     );
+    // }
   }
 }

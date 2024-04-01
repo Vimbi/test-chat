@@ -57,7 +57,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnprocessableEntityException();
+      throw new UnprocessableEntityException('Пользователь не существует');
     }
 
     const isValidPassword = await bcrypt.compare(
@@ -70,7 +70,7 @@ export class AuthService {
       await this.usersService.updateUser(user._id, { loginAt: new Date() });
       return token;
     } else {
-      throw new UnprocessableEntityException();
+      throw new UnprocessableEntityException('Логин/Пароль не верный');
     }
   }
 
